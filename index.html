@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaAlex Ultimate Edition (Import Direct)</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+        body { background-color: #fafafa; color: #262626; display: flex; flex-direction: column; align-items: center; padding-bottom: 60px; }
+        
+        .phone-container { width: 100%; max-width: 450px; min-height: 100vh; background: #fff; display: flex; flex-direction: column; border: 1px solid #dbdbdb; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+        
+        /* En-tête */
+        .header { height: 44px; border-bottom: 1px solid #dbdbdb; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; position: sticky; top: 0; background: #fff; z-index: 10; }
+        .header .logo { font-weight: bold; font-size: 18px; font-style: italic; }
+        .header .icons { display: flex; gap: 16px; cursor: pointer; }
+
+        /* Infos Profil */
+        .profile-info { padding: 16px; display: flex; align-items: center; gap: 24px; }
+        .profile-avatar { width: 77px; height: 77px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: bold; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        .profile-stats { flex-grow: 1; display: flex; justify-content: space-around; text-align: center; font-size: 13px; }
+        .stat-num { font-weight: bold; display: block; font-size: 16px; }
+        .profile-bio { padding: 0 16px 16px 16px; font-size: 14px; line-height: 1.4; border-bottom: 1px solid #dbdbdb; }
+        .profile-bio .name { font-weight: bold; }
+
+        /* Onglets */
+        .game-menu { display: flex; border-bottom: 1px solid #dbdbdb; }
+        .tab-btn { flex: 1; background: none; border: none; padding: 12px; font-size: 14px; color: #8e8e8e; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .tab-btn.active { color: #262626; border-bottom: 2px solid #262626; font-weight: bold; }
+
+        /* Galerie Interactive */
+        .grid-view { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 3px; }
+        .grid-item { position: relative; width: 100%; aspect-ratio: 1 / 1; background-color: #efefef; cursor: pointer; display: flex; justify-content: center; align-items: center; color: #8e8e8e; overflow: hidden; }
+        .grid-item img { width: 100%; height: 100%; object-fit: cover; }
+        .grid-item .post-overlay { position: absolute; background: rgba(0,0,0,0.3); width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: white; opacity: 0; transition: opacity 0.2s; }
+        .grid-item:hover .post-overlay { opacity: 1; }
+
+        /* Fenêtre surgissante du Post (Modale) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: white; width: 100%; max-width: 400px; border-radius: 12px; overflow: hidden; position: relative; max-height: 90vh; display: flex; flex-direction: column; }
+        .modal-close { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 10; }
+        .modal-body { overflow-y: auto; padding: 15px; }
+        
+        .modal-img-container { width: 100%; height: 280px; background: #eaeaea; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #666; text-align: center; overflow: hidden; position: relative; }
+        .modal-img-container img { width: 100%; height: 100%; object-fit: cover; }
+        .modal-img-container .placeholder-text { padding: 20px; font-style: italic; font-size: 13px; }
+        .modal-img-container i { font-size: 44px; color: #999; margin-bottom: 8px; }
+        
+        .modal-desc { margin: 12px 0; font-size: 14px; line-height: 1.4; border-bottom: 1px solid #efefef; padding-bottom: 12px; }
+        .modal-comments { font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+        .com-line { margin-bottom: 3px; }
+        .com-user { font-weight: bold; margin-right: 6px; }
+
+        /* Messagerie */
+        .messenger-view { display: none; padding: 20px; flex-direction: column; align-items: center; }
+        .input-box { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+        .input-box input { width: 100%; padding: 14px; border: 1px solid #dbdbdb; border-radius: 8px; font-size: 14px; background: #fafafa; text-align: center; }
+        .input-box button { width: 100%; padding: 12px; background: #0095f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        
+        /* Alertes et zones de jeu */
+        .error-banner { display: none; color: #ff3b30; font-size: 13px; font-weight: bold; margin-top: 5px; text-align: center; }
+        .alert-zone { display: none; background: #ff3b30; color: white; padding: 20px; border-radius: 12px; margin-top: 20px; width: 100%; }
+        .countdown { font-size: 38px; font-weight: bold; text-align: center; margin: 15px 0; font-family: monospace; }
+        .victory-zone { display: none; background: #34c759; color: white; padding: 25px; border-radius: 12px; margin-top: 20px; width: 100%; text-align: center; }
+
+        /* Panneau d'administration */
+        .admin-panel { margin-top: 30px; width: 100%; max-width: 450px; background: #f0f0f0; border: 2px dashed #0095f6; padding: 15px; border-radius: 8px; }
+        .admin-title { font-size: 13px; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; cursor: pointer; color: #0095f6; }
+        .admin-content { display: none; flex-direction: column; gap: 15px; }
+        .admin-section { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 5px; }
+        .admin-section h4 { font-size: 12px; color: #333; margin-bottom: 8px; background: #e0e0e0; padding: 4px; border-radius: 3px; }
+        .admin-content label { font-size: 11px; font-weight: bold; color: #555; display: block; margin-top: 5px; }
+        .admin-content input[type="text"], .admin-content input[type="number"], .admin-content textarea { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; margin-top: 2px; }
+        
+        /* Style spécial bouton photo */
+        .file-input-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 4px; background: #fff; padding: 6px; border: 1px dashed #0095f6; border-radius: 4px; }
+        .file-input-wrapper input[type="file"] { font-size: 12px; flex-grow: 1; }
+        .preview-mini { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; background: #eee; border: 1px solid #ccc; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        <!-- BARRE DE L'APPLICATION -->
+        <div class="header">
+            <div class="logo">Instagram</div>
+            <div class="icons">
+                <span class="material-icons" onclick="switchTab('feed')">grid_on</span>
+                <span class="material-icons" onclick="switchTab('messenger')">chat_bubble_outline</span>
+            </div>
+        </div>
+
+        <!-- INFOS COMPTE -->
+        <div class="profile-info">
+            <div class="profile-avatar">A</div>
+            <div class="profile-stats">
+                <div><span class="stat-num">7</span>publis</div>
+                <div><span class="stat-num" id="display-followers">184</span>abonnés</div>
+                <div><span class="stat-num" id="display-following">201</span>abonnements</div>
+            </div>
+        </div>
+        <div class="profile-bio">
+            <div class="name" id="display-name">Alexandre Voulgre</div>
+            <p id="display-bio-text"></p>
+        </div>
+
+        <!-- MENU DE SÉLECTION -->
+        <div class="game-menu">
+            <button id="tab-feed" class="tab-btn active" onclick="switchTab('feed')"><span class="material-icons">grid_on</span> GALERIE</button>
+            <button id="tab-messenger" class="tab-btn" onclick="switchTab('messenger')"><span class="material-icons">lock_open</span> MESSAGERIE</button>
+        </div>
+
+        <!-- CONTENU DE LA GALERIE (GRILLE) -->
+        <div id="view-feed" class="grid-view"></div>
+
+        <!-- CONTENU DE LA MESSAGERIE -->
+        <div id="view-messenger" class="messenger-view">
+            <span class="material-icons" style="font-size: 48px; color: #262626; margin-bottom: 10px;">lock</span>
+            <h3 style="font-size: 16px; margin-bottom: 5px;">Canal Réseau Sécurisé</h3>
+            <p style="color: #8e8e8e; font-size: 13px; text-align: center;">Veuillez synchroniser l'application avec un mot-clé valide.</p>
+            
+            <div class="input-box">
+                <input type="text" id="crypto-input" placeholder="Entrez le code secret..." autocomplete="off">
+                <button onclick="validateCryptoCode()">SYNCHRONISER</button>
+                <div id="error-banner" class="error-banner">⚠️ CODE ERRONÉ : Connexion refusée par le serveur.</div>
+            </div>
+
+            <!-- COMPTE À REBOURS -->
+            <div id="alert-zone" class="alert-zone">
+                <h3 style="text-align: center; font-size: 15px;">🚨 PROTOCOLE DE BLANCHIMENT EN COURS 🚨</h3>
+                <p style="margin-top: 10px; font-size: 12px; background: rgba(0,0,0,0.15); padding: 8px; border-radius: 6px; font-style: italic;">
+                    <strong>Alerte système :</strong> Transfert d'actifs détecté suite à l'authentification "Montserrat".
+                </p>
+                <div id="timer-display" class="countdown">24:00:00</div>
+                <p style="font-size: 11px; text-align: center; border-top: 1px dashed rgba(255,255,255,0.4); padding-top: 10px;">
+                    Entrez immédiatement le code d'arrêt d'urgence pour bloquer le piratage.
+                </p>
+            </div>
+
+            <!-- VICTOIRE -->
+            <div id="victory-zone" class="victory-zone">
+                <span class="material-icons" style="font-size: 44px; margin-bottom: 8px;">verified</span>
+                <h3 style="font-size: 18px; margin-bottom: 8px;">SYSTÈME SÉCURISÉ</h3>
+                <p id="display-victory-txt" style="font-size: 13px; text-align: left; line-height: 1.4;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FENÊTRE POST ZOOM (MODALE) -->
+    <div id="post-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closePost()">✕</button>
+            <div class="modal-body">
+                <div id="modal-img-zone" class="modal-img-container"></div>
+                <div class="modal-desc" id="modal-desc-text"></div>
+                <div class="modal-comments" id="modal-comments-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🛠️ PANNEAU GENERAL DE CONFIGURATION 🛠️ -->
+    <div class="admin-panel">
+        <div class="admin-title" onclick="toggleAdmin()">
+            <span>🛠️ CONFIGURATION : CLIQUEZ POUR CONFIGURER VOS PHOTOS LOCALES</span>
+            <span id="admin-arrow">▼</span>
+        </div>
+        <div id="admin-content" class="admin-content">
+            
+            <div class="admin-section">
+                <h4>👤 Informations Générales du Compte</h4>
+                <label>Nom d'affichage :</label>
+                <input type="text" id="cfg-name">
+                <label>Biographie Instagram :</label>
+                <textarea id="cfg-bio" rows="3"></textarea>
+                <label>Nombre Abonnés :</label>
+                <input type="number" id="cfg-followers">
+                <label>Nombre Abonnements :</label>
+                <input type="number" id="cfg-following">
+            </div>
+
+            <div class="admin-section">
+                <h4>🏆 Fin du Jeu (Écran de réussite)</h4>
+                <label>Texte affiché lors de l'arrêt (Code : Trésor) :</label>
+                <textarea id="cfg-victory" rows="3"></textarea>
+            </div>
+
+            <div id="admin-posts-inputs"></div>
+            
+            <button style="padding:14px; background:#28a745; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px; font-size:14px;" onclick="saveConfigToStorage()">💾 ENREGISTRER DANS LA MÉMOIRE DU JEU</button>
+            <button style="padding:6px; background:#dc3545; color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer; width:100%; margin-top:8px; opacity:0.7;" onclick="resetToDefault()">🔄 Réinitialiser l'histoire par défaut</button>
+        </div>
+    </div>
+
+    <script>
+        const defaultData = {
+            name: "Alexandre Voulgre",
+            bio: "Passionné d'art 🎨 • Discret\n« Le voyage est la seule peinture qui ne s'efface jamais. »\n📍 Barcelona",
+            followers: 184,
+            following: 201,
+            victoryText: "Le code d'urgence a été validé ! Les serveurs distants de Barcelone sont déconnectés. L'héritage familial de Léo et Camille est sauvé et gelé sur un compte sécurisé. Alexandre est repéré à Montserrat. Fin de l'enquête !",
+            posts: [
+                { id: 1, icon: "business_center", imgUrl: "", placeholder: "[Photo : Une valise en cuir remplie de billets]", date: "6 mai 2026", desc: "L'art de la rupture. Parfois, pour peindre un nouveau chef-d'œuvre, il faut savoir gratter l'ancienne toile jusqu'à la déchirer.", coms: "Léo_Voulgre : T'es sérieux Alexandre ?! Tu as vidé le coffre de papa !\nCamille_V : Tu me dégoûtes. Partir comme un voleur..." },
+                { id: 2, icon: "location_city", imgUrl: "", placeholder: "[Photo : Vue panoramique du Parc Güell à Barcelone]", date: "15 mai 2026", desc: "Barcelone m'adopte, l'art m'attend. Les génies comme Gaudi savaient que les grandes structures demandent de grands sacrifices.", coms: "Léo_Voulgre : Tu frimes à Barcelone avec NOTRE thune ?\nAlex_Art_V : La loi des hommes ne comprend rien à l'art." },
+                { id: 3, icon: "currency_bitcoin", imgUrl: "", placeholder: "[Photo : Portefeuille de crypto et graphiques financiers]", date: "28 mai 2026", desc: "La volatilité est une poésie moderne. L'immobilier de luxe rencontre la blockchain. Sécuriser l'avenir, c'est savoir faire disparaître le tangible.", coms: "Camille_V : Tu blanchis le fric en crypto maintenant ? Papa se retournerait dans sa tombe." },
+                { id: 4, icon: "coffee", imgUrl: "", placeholder: "[Photo : Un café en terrasse, carnet ouvert avec le mot 'Montserrat' souligné]", date: "10 juin 2026", desc: "Les affaires exigent de la discrétion et de la hauteur. Un rendez-vous est pris là où les montagnes touchent le ciel.", coms: "Léo_Voulgre : C'est quoi ce rendez-vous à Montserrat ? Réponds !" },
+                { id: 5, icon: "terrain", imgUrl: "", placeholder: "[Photo : Les aiguilles de pierre de Montserrat dans la brume]", date: "18 juin 2026", desc: "La roche sacrée de Montserrat. C'est ici, dans ce sanctuaire mystique, que l'homme de l'ombre m'attend. Une poignée de main, et l'argent sera introuvable.", coms: "Camille_V : Ne fais pas ça ! Si tu valides cette transaction, il n'y aura plus aucun retour !" },
+                { id: 6, icon: "directions_walk", imgUrl: "", placeholder: "[Photo : Silhouette lointaine d'un homme en costume]", date: "25 juin 2026", desc: "L'accord est scellé. L'ombre a accepté mon offre. Le protocole de synchronisation de la messagerie est en place. Le compte à rebours final est prêt.", coms: "Léo_Voulgre : T'es un monstre. Tu as détruit notre famille pour du fric." },
+                { id: 7, icon: "lock", imgUrl: "", placeholder: "[Photo : Smartphone affichant un écran crypté]", date: "30 juin 2026", desc: "Le chef-d'œuvre est achevé. Tout est crypté. Seuls ceux qui connaissent le secret des montagnes pourront ouvrir la porte. Adieu la France.", coms: "Camille_V : C'est fini alors... On a tout perdu par ta faute." }
+            ]
+        };
+
+        let appConfig = {};
+        let timerInterval = null;
+        let totalSeconds = 24 * 60 * 60;
+        let isAlertActive = false;
+
+        window.onload = function() {
+            const savedData = localStorage.getItem('instaAlexConfig_v2');
+            if (savedData) {
+                appConfig = JSON.parse(savedData);
+            } else {
+                appConfig = JSON.parse(JSON.stringify(defaultData));
+            }
+            
+            fillAdminFields();
+            buildAdminPostsForm();
+            applyDataToPhone();
+        };
+
+        function fillAdminFields() {
+            document.getElementById('cfg-name').value = appConfig.name;
+            document.getElementById('cfg-bio').value = appConfig.bio;
+            document.getElementById('cfg-followers').value = appConfig.followers;
+            document.getElementById('cfg-following').value = appConfig.following;
+            document.getElementById('cfg-victory').value = appConfig.victoryText;
+        }
+
+        function buildAdminPostsForm() {
+            const container = document.getElementById('admin-posts-inputs');
+            container.innerHTML = "";
+            appConfig.posts.forEach(p => {
+                container.innerHTML += `
+                    <div class="admin-section">
+                        <h4>🖼️ CONFIGURATION DU POST N°${p.id}</h4>
+                        
+                        <label>📁 CLIQUEZ ICI POUR AJOUTER LA PHOTO DE VOTRE ORDINATEUR :</label>
+                        <div class="file-input-wrapper">
+                            <img id="prev-${p.id}" class="preview-mini" src="${p.imgUrl || ''}" style="display: ${p.imgUrl ? 'block' : 'none'}">
+                            <input type="file" id="file-${p.id}" accept="image/*" onchange="handleFileSelect(event, ${p.id})">
+                        </div>
+                        
+                        <label style="margin-top:8px;">Texte de secours (si pas de photo chargée) :</label>
+                        <input type="text" id="p-place-${p.id}" value="${p.placeholder}">
+                        <label>Icône par défaut (terrain, lock, coffee, business_center) :</label>
+                        <input type="text" id="p-icon-${p.id}" value="${p.icon}">
+                        <label>Date du post :</label>
+                        <input type="text" id="p-date-${p.id}" value="${p.date}">
+                        <label>Légende d'Alexandre :</label>
+                        <textarea id="p-desc-${p.id}" rows="2">${p.desc}</textarea>
+                        <label>Commentaires liés (Format : Nom : Commentaire -> Un par ligne) :</label>
+                        <textarea id="p-coms-${p.id}" rows="3">${p.coms}</textarea>
+                    </div>
+                `;
+            });
+        }
+
+        // Fonction magique qui transforme la photo locale en texte mémorisable
+        function handleFileSelect(event, postId) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Url = e.target.result;
+                // Mettre à jour l'objet en mémoire temporelle
+                const post = appConfig.posts.find(p => p.id === postId);
+                post.imgUrl = base64Url;
+                
+                // Mettre à jour la petite miniature dans l'administration
+                const previewImg = document.getElementById(`prev-${postId}`);
+                previewImg.src = base64Url;
+                previewImg.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveConfigToStorage() {
+            appConfig.name = document.getElementById('cfg-name').value;
+            appConfig.bio = document.getElementById('cfg-bio').value;
+            appConfig.followers = parseInt(document.getElementById('cfg-followers').value) || 0;
+            appConfig.following = parseInt(document.getElementById('cfg-following').value) || 0;
+            appConfig.victoryText = document.getElementById('cfg-victory').value;
+
+            appConfig.posts.forEach(p => {
+                p.placeholder = document.getElementById(`p-place-${p.id}`).value;
+                p.icon = document.getElementById(`p-icon-${p.id}`).value;
+                p.date = document.getElementById(`p-date-${p.id}`).value;
+                p.desc = document.getElementById(`p-desc-${p.id}`).value;
+                p.coms = document.getElementById(`p-coms-${p.id}`).value;
+                // Note: p.imgUrl est déjà mis à jour directement lors du clic sur le fichier
+            });
+
+            localStorage.setItem('instaAlexConfig_v2', JSON.stringify(appConfig));
+            applyDataToPhone();
+            alert("💾 Vos photos de l'ordinateur et vos textes sont mémorisés ! Prêt pour le jeu.");
+        }
+
+        function resetToDefault() {
+            if(confirm("Rétablir les paramètres d'origine ? (Effacera vos photos importées)")) {
+                localStorage.removeItem('instaAlexConfig_v2');
+                appConfig = JSON.parse(JSON.stringify(defaultData));
+                fillAdminFields();
+                buildAdminPostsForm();
+                applyDataToPhone();
+                alert("Réinitialisé !");
+            }
+        }
+
+        function applyDataToPhone() {
+            document.getElementById('display-name').innerText = appConfig.name;
+            document.getElementById('display-bio-text').innerHTML = appConfig.bio.replace(/\n/g, '<br>');
+            document.getElementById('display-followers').innerText = appConfig.followers;
+            document.getElementById('display-following').innerText = appConfig.following;
+            document.getElementById('display-victory-txt').innerText = appConfig.victoryText;
+
+            const feedGrid = document.getElementById('view-feed');
+            feedGrid.innerHTML = "";
+            appConfig.posts.forEach(p => {
+                let innerContent = p.imgUrl && p.imgUrl !== "" 
+                    ? `<img src="${p.imgUrl}" alt="Photo">` 
+                    : `<span class="material-icons" style="font-size: 32px;">${p.icon}</span>`;
+                
+                feedGrid.innerHTML += `
+                    <div class="grid-item" onclick="openPost(${p.id})">
+                        ${innerContent}
+                        <div class="post-overlay"><span class="material-icons">favorite</span>&nbsp;${Math.floor(Math.random() * 80) + 15}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function openPost(id) {
+            const post = appConfig.posts.find(p => p.id === id);
+            const imgZone = document.getElementById('modal-img-zone');
+            
+            if (post.imgUrl && post.imgUrl !== "") {
+                imgZone.innerHTML = `<img src="${post.imgUrl}">`;
+            } else {
+                imgZone.innerHTML = `<span class="material-icons" style="font-size:48px;color:#999;margin-bottom:8px;">${post.icon}</span><div class="placeholder-text">${post.placeholder}</div>`;
+            }
+
+            document.getElementById('modal-desc-text').innerHTML = `<strong>@Alex_Art_V</strong> ${post.desc}<br><span style="font-size:11px;color:#8e8e8e;text-transform:uppercase;display:block;margin-top:8px;">${post.date}</span>`;
+            
+            let commentsHTML = "";
+            if (post.coms.trim() !== "") {
+                const lines = post.coms.split('\n');
+                lines.forEach(line => {
+                    if(line.includes(':')) {
+                        let parts = line.split(':');
+                        let user = parts[0].trim();
+                        let commentText = parts.slice(1).join(':').trim();
+                        commentsHTML += `<div class="com-line"><span class="com-user">${user}</span>${commentText}</div>`;
+                    }
+                });
+            }
+            document.getElementById('modal-comments-list').innerHTML = commentsHTML;
+            document.getElementById('post-modal').style.display = 'flex';
+        }
+
+        function closePost() { document.getElementById('post-modal').style.display = 'none'; }
+
+        function switchTab(tabId) {
+            document.getElementById('view-feed').style.display = tabId === 'feed' ? 'grid' : 'none';
+            document.getElementById('view-messenger').style.display = tabId === 'messenger' ? 'flex' : 'none';
+            document.getElementById('tab-feed').classList.toggle('active', tabId === 'feed');
+            document.getElementById('tab-messenger').classList.toggle('active', tabId === 'messenger');
+        }
+
+        function validateCryptoCode() {
+            const input = document.getElementById('crypto-input').value.trim().toLowerCase();
+            const errorBanner = document.getElementById('error-banner');
+            const alertZone = document.getElementById('alert-zone');
+            const victoryZone = document.getElementById('victory-zone');
+
+            errorBanner.style.display = 'none';
+
+            if (input === 'montserrat') {
+                if (!isAlertActive) {
+                    alertZone.style.display = 'block';
+                    document.getElementById('crypto-input').value = '';
+                    document.getElementById('crypto-input').placeholder = "Entrez le code d'arrêt d'urgence...";
+                    isAlertActive = true;
+                    startCountdown();
+                }
+            } else if (input === 'trésor' || input === 'tresor') {
+                if (isAlertActive) {
+                    clearInterval(timerInterval);
+                    alertZone.style.display = 'none';
+                    victoryZone.style.display = 'block';
+                    document.getElementById('crypto-input').style.display = 'none';
+                    document.querySelector('.input-box button').style.display = 'none';
+                } else { errorBanner.style.display = 'block'; }
+            } else { errorBanner.style.display = 'block'; }
+        }
+
+        function startCountdown() {
+            timerInterval = setInterval(() => {
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timer-display').innerText = "00:00:00";
+                    return;
+                }
+                totalSeconds--;
+                let hrs = Math.floor(totalSeconds / 3600);
+                let mins = Math.floor((totalSeconds % 3600) / 60);
+                let secs = totalSeconds % 60;
+                hrs = hrs < 10 ? '0' + hrs : hrs; mins = mins < 10 ? '0' + mins : mins; secs = secs < 10 ? '0' + secs : secs;
+                document.getElementById('timer-display').innerText = `${hrs}:${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function toggleAdmin() {
+            const content = document.getElementById('admin-content');
+            const arrow = document.getElementById('admin-arrow');
+            content.style.display = content.style.display === 'flex' ? 'none' : 'flex';
+            arrow.innerText = content.style.display === 'flex' ? '▲' : '▼';
+        }
+    </script>
+</body>
+</html>
